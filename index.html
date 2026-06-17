@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Skin & Ink — tattoo mockup tool</title>
+<style>
+  :root{
+    --ink: #1c1a18;
+    --paper: #f3eee4;
+    --paper-dim: #e8e0d2;
+    --line: #cfc4ad;
+    --accent: #b5482f;
+    --accent-dim: #8a3722;
+    --panel: #ffffff;
+    --mono: 'JetBrains Mono', 'Courier New', monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--ink);
+    font-family:var(--sans);
+    color:var(--paper);
+    overflow:hidden;
+  }
+  #app{
+    display:grid;
+    grid-template-columns: 280px 1fr 280px;
+    grid-template-rows: 56px 1fr 64px;
+    height:100vh;
+    width:100vw;
+  }
+
+  /* ---------- HEADER ---------- */
+  #header{
+    grid-column: 1 / -1;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 20px;
+    background: var(--ink);
+    border-bottom: 1px solid #33302c;
+  }
+  #brand{
+    display:flex; align-items:center; gap:10px;
+    font-family: var(--mono);
+    letter-spacing: 0.5px;
+  }
+  #brand .mark{
+    width:20px; height:20px;
+    border:1.5px solid var(--accent);
+    border-radius:50%;
+    position:relative;
+    flex-shrink:0;
+  }
+  #brand .mark::after{
+    content:'';
+    position:absolute; inset:4px;
+    border:1.5px solid var(--accent);
+    border-radius:50%;
+  }
+  #brand .title{ font-size:14px; font-weight:600; color:var(--paper); }
+  #brand .sub{ font-size:11px; color:#8a8478; }
+  #headerActions{ display:flex; gap:8px; align-items:center; }
+  #headerActions .hint{
+    font-size:11px; color:#8a8478; font-family: var(--mono);
+    margin-right: 4px;
+  }
+
+  button{
+    font-family: var(--sans);
+    cursor:pointer;
+  }
+  .btn{
+    background:transparent;
+    border:1px solid #44403a;
+    color:var(--paper);
+    padding:7px 13px;
+    font-size:12.5px;
+    border-radius:3px;
+    transition: all 0.12s ease;
+    white-space:nowrap;
+  }
+  .btn:hover{ border-color:var(--accent); color:#fff; background:#262320; }
+  .btn:active{ transform: scale(0.97); }
+  .btn.primary{ background:var(--accent); border-color:var(--accent); color:#fff7f0; }
+  .btn.primary:hover{ background:var(--accent-dim); border-color:var(--accent-dim); }
+  .btn.small{ padding:5px 9px; font-size:11px; }
+  .btn:disabled{ opacity:0.35; cursor:not-allowed; }
+  .btn:disabled:hover{ border-color:#44403a; background:transparent; color:var(--paper); }
+
+  /* ---------- SIDE PANELS ---------- */
+  .panel{
+    background: #211e1a;
+    border-right: 1px solid #33302c;
+    overflow-y:auto;
+    padding: 18px 16px;
+    display:flex;
+    flex-direction:column;
+    gap: 22px;
+  }
+  #rightPanel{ border-right:none; border-left:1px solid #33302c; }
+
+  .section-label{
+    font-family: var(--mono);
+    font-size:10.5px;
+    letter-spacing: 1.2px;
+    text-transform:uppercase;
+    color:#7a756a;
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+
+  .dropzone{
+    border: 1.5px dashed #4a453d;
+    border-radius:6px;
+    padding: 22px 12px;
+    text-align:center;
+    font-size:12px;
+    color:#9b9588;
+    cursor:pointer;
+    transition: all 0.15s ease;
+  }
+  .dropzone:hover, .dropzone.drag{
+    border-color: var(--accent);
+    background: rgba(181,72,47,0.08);
+    color: var(--paper);
+  }
+  .dropzone .big{ font-size:22px; margin-bottom:6px; display:block; }
+  .filechip{
+    display:flex; align-items:center; justify-content:space-between;
+    background:#2a2622; border:1px solid #3a3530;
+    border-radius:4px; padding:6px 9px; font-size:11.5px;
+    margin-top:8px; color:#c9c3b6;
+  }
+  .filechip .x{ cursor:pointer; color:#7a756a; padding:0 2px; }
+  .filechip .x:hover{ color:var(--accent); }
+
+  .tool-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:6px;
+  }
+  .tool-btn{
+    background:#2a2622;
+    border:1px solid #3a3530;
+    color:#c9c3b6;
+    padding:9px 6px;
+    font-size:11.5px;
+    border-radius:4px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+    transition: all 0.12s ease;
+  }
+  .tool-btn .icon{ font-size:15px; line-height:1; }
+  .tool-btn:hover{ border-color:#5a544a; }
+  .tool-btn.active{
+    background: rgba(181,72,47,0.15);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .field{ display:flex; flex-direction:column; gap:6px; }
+  .field label{
+    font-size:11px; color:#9b9588;
+    display:flex; justify-content:space-between;
+  }
+  .field label .val{ color:var(--paper); font-family:var(--mono); }
+  input[type="range"]{
+    -webkit-appearance:none;
+    width:100%; height:3px;
+    background:#3a3530;
+    border-radius:2px;
+    outline:none;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:13px; height:13px;
+    border-radius:50%;
+    background: var(--accent);
+    cursor:pointer;
+    border:2px solid #211e1a;
+  }
+  input[type="color"]{
+    -webkit-appearance:none;
+    width:100%; height:30px;
+    border:1px solid #3a3530;
+    border-radius:4px;
+    background:none;
+    cursor:pointer;
+    padding:0;
+  }
+  input[type="color"]::-webkit-color-swatch-wrapper{ padding:2px; }
+  input[type="color"]::-webkit-color-swatch{ border-radius:3px; border:none; }
+
+  .swatches{ display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .swatch{
+    width:22px; height:22px; border-radius:50%;
+    border:2px solid #3a3530;
+    cursor:pointer;
+  }
+  .swatch.active{ border-color: var(--paper); }
+
+  #opacityPreview{
+    width:100%; height:34px;
+    border-radius:4px;
+    border:1px solid #3a3530;
+    margin-top:4px;
+    background-image:
+      linear-gradient(45deg, #444 25%, transparent 25%),
+      linear-gradient(-45deg, #444 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #444 75%),
+      linear-gradient(-45deg, transparent 75%, #444 75%);
+    background-size:10px 10px;
+    background-position:0 0, 0 5px, 5px -5px, -5px 0px;
+    position:relative;
+    overflow:hidden;
+  }
+  #opacityPreview .fill{ position:absolute; inset:0; }
+
+  .layer-row{
+    display:flex; align-items:center; gap:8px;
+    background:#2a2622; border:1px solid #3a3530;
+    border-radius:4px; padding:7px 9px;
+    font-size:12px;
+  }
+  .layer-row .name{ flex:1; color:#c9c3b6; }
+  .layer-row button{
+    background:none; border:none; color:#7a756a;
+    font-size:13px; padding:2px 4px;
+  }
+  .layer-row button:hover{ color:var(--paper); }
+
+  .preset-list{ display:flex; flex-direction:column; gap:5px; }
+  .preset-btn{
+    text-align:left;
+    background:#2a2622; border:1px solid #3a3530; color:#b8b2a4;
+    padding:8px 10px; font-size:11.5px; border-radius:4px;
+  }
+  .preset-btn:hover{ border-color:#5a544a; color:#fff; }
+
+  /* ---------- VIEWPORT ---------- */
+  #viewport{
+    position:relative;
+    background:
+      radial-gradient(ellipse at 50% 30%, #2b2825 0%, #181613 75%);
+    overflow:hidden;
+  }
+  #canvas3d{ position:absolute; inset:0; display:block; width:100%; height:100%; }
+  #drawCanvas{
+    position:absolute; inset:0; width:100%; height:100%;
+    cursor: crosshair;
+  }
+  #drawCanvas.orbit-mode{ cursor: grab; pointer-events:none; }
+
+  #emptyState{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:14px;
+    text-align:center;
+    pointer-events:none;
+  }
+  #emptyState .glyph{
+    font-size:46px; opacity:0.5; font-family: var(--mono); color:#5a544a;
+  }
+  #emptyState .msg{ color:#7a756a; font-size:13px; max-width:280px; line-height:1.6; }
+  #emptyState .msg b{ color:#9b9588; }
+
+  #viewportTop{
+    position:absolute; top:14px; left:14px; right:14px;
+    display:flex; justify-content:space-between; align-items:flex-start;
+    pointer-events:none;
+  }
+  #modeBadge{
+    pointer-events:auto;
+    background: rgba(33,30,26,0.9);
+    border:1px solid #3a3530;
+    border-radius:20px;
+    padding:6px 14px;
+    font-size:11px;
+    font-family: var(--mono);
+    letter-spacing:0.5px;
+    display:flex; align-items:center; gap:8px;
+    backdrop-filter: blur(4px);
+  }
+  #modeBadge .dot{
+    width:6px; height:6px; border-radius:50%;
+    background: var(--accent);
+  }
+  #viewControls{
+    pointer-events:auto;
+    display:flex; gap:6px;
+  }
+  #viewControls .btn{
+    background: rgba(33,30,26,0.9);
+    backdrop-filter: blur(4px);
+  }
+
+  #loadingOverlay{
+    position:absolute; inset:0;
+    background: rgba(24,22,19,0.92);
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:12px;
+    z-index:50;
+  }
+  #loadingOverlay.hidden{ display:none; }
+  .spinner{
+    width:28px; height:28px;
+    border:2px solid #3a3530;
+    border-top-color: var(--accent);
+    border-radius:50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+  #loadingOverlay .txt{ font-size:12px; color:#9b9588; font-family:var(--mono); }
+
+  /* ---------- FOOTER ---------- */
+  #footer{
+    grid-column: 1 / -1;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 20px;
+    background: var(--ink);
+    border-top:1px solid #33302c;
+    font-size:11px; color:#7a756a;
+  }
+  #footer .group{ display:flex; gap:18px; align-items:center; }
+  #footer kbd{
+    background:#2a2622; border:1px solid #3a3530; border-radius:3px;
+    padding:1px 6px; font-family:var(--mono); font-size:10.5px; color:#b8b2a4;
+  }
+
+  .toast{
+    position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+    background:#2a2622; border:1px solid var(--accent);
+    color:#fff; padding:10px 18px; border-radius:5px;
+    font-size:12.5px; z-index:999;
+    opacity:0; transition: opacity 0.25s ease;
+    pointer-events:none;
+  }
+  .toast.show{ opacity:1; }
+
+  ::-webkit-scrollbar{ width:8px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  ::-webkit-scrollbar-thumb{ background:#3a3530; border-radius:4px; }
+
+  .twocol{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+
+  @media (max-width: 900px){
+    #app{ grid-template-columns: 1fr; grid-template-rows: 56px 1fr auto 64px; }
+    .panel{ display:none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <div id="header">
+    <div id="brand">
+      <div class="mark"></div>
+      <div>
+        <div class="title">Skin &amp; Ink</div>
+        <div class="sub">3D tattoo mockup studio</div>
+      </div>
+    </div>
+    <div id="headerActions">
+      <span class="hint">drag to orbit · scroll to zoom</span>
+      <button class="btn" id="resetViewBtn">Reset view</button>
+      <button class="btn primary" id="exportBtn" disabled>Export</button>
+    </div>
+  </div>
+
+  <div class="panel" id="leftPanel">
+
+    <div>
+      <div class="section-label">Model</div>
+      <div class="dropzone" id="objDrop">
+        <span class="big">&#9670;</span>
+        Drop .obj file here<br/>or click to browse
+      </div>
+      <input type="file" id="objInput" accept=".obj" style="display:none" />
+      <div id="objChip"></div>
+
+      <div class="dropzone" id="mtlDrop" style="margin-top:8px; padding:14px 12px;">
+        <span style="font-size:11px;">+ optional .mtl / texture (.jpg, .png)</span>
+      </div>
+      <input type="file" id="mtlInput" accept=".mtl,.jpg,.jpeg,.png" multiple style="display:none" />
+      <div id="mtlChip"></div>
+    </div>
+
+    <div>
+      <div class="section-label">Quick start</div>
+      <div class="preset-list">
+        <button class="preset-btn" id="loadArmBtn">&#9671; Generic forearm</button>
+        <button class="preset-btn" id="loadSphereBtn">&#9671; Sphere (test surface)</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Surface</div>
+      <div class="field">
+        <label>Skin tone</label>
+        <input type="color" id="skinColor" value="#e3b794" />
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>Surface shading <span class="val" id="shadeVal">on</span></label>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="viewport">
+    <canvas id="canvas3d"></canvas>
+    <canvas id="drawCanvas"></canvas>
+
+    <div id="emptyState">
+      <div class="glyph">&#9633;</div>
+      <div class="msg">
+        Import an <b>.obj</b> file on the left, or try a quick-start shape, to begin sketching your tattoo placement.
+      </div>
+    </div>
+
+    <div id="viewportTop">
+      <div id="modeBadge"><span class="dot"></span><span id="modeLabel">Orbit mode</span></div>
+      <div id="viewControls">
+        <button class="btn small" id="frontBtn">Front</button>
+        <button class="btn small" id="sideBtn">Side</button>
+        <button class="btn small" id="backBtn">Back</button>
+      </div>
+    </div>
+
+    <div id="loadingOverlay" class="hidden">
+      <div class="spinner"></div>
+      <div class="txt" id="loadingTxt">Loading model…</div>
+    </div>
+  </div>
+
+  <div class="panel" id="rightPanel">
+
+    <div>
+      <div class="section-label">Mode</div>
+      <div class="tool-grid">
+        <button class="tool-btn active" data-mode="orbit"><span class="icon">&#9851;</span>Orbit</button>
+        <button class="tool-btn" data-mode="draw"><span class="icon">&#9998;</span>Draw</button>
+      </div>
+    </div>
+
+    <div id="drawTools">
+      <div class="section-label">Tool</div>
+      <div class="tool-grid">
+        <button class="tool-btn active" data-tool="pen"><span class="icon">&#10001;</span>Pen</button>
+        <button class="tool-btn" data-tool="line"><span class="icon">&#8212;</span>Line</button>
+        <button class="tool-btn" data-tool="eraser"><span class="icon">&#9251;</span>Eraser</button>
+        <button class="tool-btn" data-tool="stamp"><span class="icon">&#10022;</span>Stencil</button>
+      </div>
+
+      <div class="field" style="margin-top:14px;">
+        <label>Brush size <span class="val" id="sizeVal">4px</span></label>
+        <input type="range" id="sizeSlider" min="1" max="40" value="4" />
+      </div>
+
+      <div class="field" style="margin-top:12px;">
+        <label>Opacity <span class="val" id="opacityVal">100%</span></label>
+        <input type="range" id="opacitySlider" min="5" max="100" value="100" />
+      </div>
+
+      <div class="field" style="margin-top:12px;">
+        <label>Ink color</label>
+        <input type="color" id="inkColor" value="#0a0a0a" />
+        <div class="swatches">
+          <div class="swatch active" style="background:#0a0a0a" data-color="#0a0a0a"></div>
+          <div class="swatch" style="background:#1a3a52" data-color="#1a3a52"></div>
+          <div class="swatch" style="background:#5c1a1a" data-color="#5c1a1a"></div>
+          <div class="swatch" style="background:#2d4a1e" data-color="#2d4a1e"></div>
+          <div class="swatch" style="background:#6b6b6b" data-color="#6b6b6b"></div>
+          <div class="swatch" style="background:#8b2252" data-color="#8b2252"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;">
+        <div class="section-label">Stencil opacity</div>
+        <div id="opacityPreview"><div class="fill" id="opacityFill" style="background:#0a0a0a; opacity:1;"></div></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">
+        History
+      </div>
+      <div class="twocol">
+        <button class="btn small" id="undoBtn">&#8634; Undo</button>
+        <button class="btn small" id="redoBtn">&#8635; Redo</button>
+      </div>
+      <button class="btn small" id="clearBtn" style="margin-top:6px; width:100%; border-color:#5c2a2a;">Clear all ink</button>
+    </div>
+
+    <div>
+      <div class="section-label">Reference image</div>
+      <div class="dropzone" id="refDrop" style="padding:14px 12px;">
+        <span style="font-size:11px;">Drop a tattoo reference to trace</span>
+      </div>
+      <input type="file" id="refInput" accept="image/*" style="display:none" />
+      <div id="refChip"></div>
+      <div class="field" id="refOpacityField" style="margin-top:8px; display:none;">
+        <label>Reference opacity <span class="val" id="refOpacityVal">50%</span></label>
+        <input type="range" id="refOpacitySlider" min="0" max="100" value="50" />
+      </div>
+    </div>
+
+  </div>
+
+  <div id="footer">
+    <div class="group">
+      <span><kbd>L-drag</kbd> orbit</span>
+      <span><kbd>scroll</kbd> zoom</span>
+      <span><kbd>Z</kbd> undo</span>
+      <span><kbd>D</kbd> draw mode</span>
+      <span><kbd>O</kbd> orbit mode</span>
+    </div>
+    <div class="group">
+      <span id="statusText">No model loaded</span>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/loaders/MTLLoader.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script>
+(function(){
+
+  /* ============================================================
+     STATE
+  ============================================================ */
+  const state = {
+    mode: 'orbit',           // 'orbit' | 'draw'
+    tool: 'pen',
+    brushSize: 4,
+    opacity: 1,
+    inkColor: '#0a0a0a',
+    skinColor: '#e3b794',
+    refOpacity: 0.5,
+    hasModel: false,
+    lineStart: null,         // for line tool preview
+    history: [],
+    historyIndex: -1,
+    maxHistory: 25
+  };
+
+  function toast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(()=> t.classList.remove('show'), 1800);
+  }
+
+  /* ============================================================
+     THREE.JS SETUP
+  ============================================================ */
+  const canvas3d = document.getElementById('canvas3d');
+  const viewport = document.getElementById('viewport');
+
+  const renderer = new THREE.WebGLRenderer({ canvas: canvas3d, antialias:true, preserveDrawingBuffer:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 1000);
+  camera.position.set(0, 0.3, 3.2);
+
+  const controls = new THREE.OrbitControls(camera, canvas3d);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.minDistance = 0.3;
+  controls.maxDistance = 20;
+
+  // lights
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  const keyLight = new THREE.DirectionalLight(0xfff4e8, 1.1);
+  keyLight.position.set(2, 3, 4);
+  scene.add(keyLight);
+  const fillLight = new THREE.DirectionalLight(0xcfe0ff, 0.45);
+  fillLight.position.set(-3, -1, -2);
+  scene.add(fillLight);
+  const rimLight = new THREE.DirectionalLight(0xffffff, 0.3);
+  rimLight.position.set(0, 2, -4);
+  scene.add(rimLight);
+
+  function resizeRenderer(){
+    const w = viewport.clientWidth, h = viewport.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    const dc = document.getElementById('drawCanvas');
+    dc.width = w * Math.min(window.devicePixelRatio,2);
+    dc.height = h * Math.min(window.devicePixelRatio,2);
+    dc.style.width = w+'px';
+    dc.style.height = h+'px';
+    const dctx = dc.getContext('2d');
+    dctx.setTransform(Math.min(window.devicePixelRatio,2),0,0,Math.min(window.devicePixelRatio,2),0,0);
+  }
+  window.addEventListener('resize', resizeRenderer);
+
+  function animate(){
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  resizeRenderer();
+  animate();
+
+  /* ============================================================
+     PAINT TEXTURE (the actual "ink" lives here, in UV space)
+  ============================================================ */
+  const PAINT_SIZE = 2048;
+  const paintCanvas = document.createElement('canvas');
+  paintCanvas.width = PAINT_SIZE;
+  paintCanvas.height = PAINT_SIZE;
+  const paintCtx = paintCanvas.getContext('2d');
+  paintCtx.clearRect(0,0,PAINT_SIZE,PAINT_SIZE);
+
+  const paintTexture = new THREE.CanvasTexture(paintCanvas);
+  paintTexture.needsUpdate = true;
+
+  // base skin/material texture (procedural, simple gradient + noise look via color)
+  let baseTexture = null; // user-supplied texture if any
+  let currentMesh = null;
+  let currentMaterial = null;
+
+  function rebuildMaterial(){
+    if (!currentMesh) return;
+    const mat = new THREE.MeshStandardMaterial({
+      color: baseTexture ? 0xffffff : new THREE.Color(state.skinColor),
+      map: baseTexture || null,
+      roughness: 0.78,
+      metalness: 0.0,
+    });
+    // overlay ink via a second pass using multiply blend through a custom approach:
+    // simplest robust approach: bake skin+texture into one canvas combined with paint, swapped on demand.
+    currentMesh.material = mat;
+    currentMaterial = mat;
+    rebakeCombinedTexture();
+  }
+
+  // Combined texture = base skin color/texture + ink painted on top
+  const combinedCanvas = document.createElement('canvas');
+  combinedCanvas.width = PAINT_SIZE;
+  combinedCanvas.height = PAINT_SIZE;
+  const combinedCtx = combinedCanvas.getContext('2d');
+  const combinedTexture = new THREE.CanvasTexture(combinedCanvas);
+  combinedTexture.encoding = THREE.sRGBEncoding;
+
+  function rebakeCombinedTexture(){
+    combinedCtx.clearRect(0,0,PAINT_SIZE,PAINT_SIZE);
+    if (baseTextureImage){
+      combinedCtx.drawImage(baseTextureImage, 0, 0, PAINT_SIZE, PAINT_SIZE);
+    } else {
+      combinedCtx.fillStyle = state.skinColor;
+      combinedCtx.fillRect(0,0,PAINT_SIZE,PAINT_SIZE);
+    }
+    combinedCtx.drawImage(paintCanvas, 0, 0);
+    combinedTexture.needsUpdate = true;
+    if (currentMaterial){
+      currentMaterial.map = combinedTexture;
+      currentMaterial.color.set(0xffffff);
+      currentMaterial.needsUpdate = true;
+    }
+  }
+
+  let baseTextureImage = null;
+
+  /* ============================================================
+     OBJ / MTL LOADING
+  ============================================================ */
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  const loadingTxt = document.getElementById('loadingTxt');
+  const emptyState = document.getElementById('emptyState');
+  const statusText = document.getElementById('statusText');
+  const exportBtn = document.getElementById('exportBtn');
+
+  function showLoading(msg){
+    loadingTxt.textContent = msg || 'Loading…';
+    loadingOverlay.classList.remove('hidden');
+  }
+  function hideLoading(){ loadingOverlay.classList.add('hidden'); }
+
+  function frameObject(obj){
+    const box = new THREE.Box3().setFromObject(obj);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    obj.position.sub(center);
+
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    const targetSize = 1.8;
+    const scale = targetSize / maxDim;
+    obj.scale.setScalar(scale);
+
+    const dist = 3.0;
+    camera.position.set(0, 0, dist);
+    controls.target.set(0,0,0);
+    controls.update();
+  }
+
+  function ensureUVs(geometry){
+    if (!geometry.attributes.uv){
+      // generate simple planar/spherical UVs as fallback so painting still works
+      geometry.computeBoundingBox();
+      const bb = geometry.boundingBox;
+      const size = new THREE.Vector3();
+      bb.getSize(size);
+      const pos = geometry.attributes.position;
+      const uvArray = new Float32Array(pos.count * 2);
+      for (let i=0;i<pos.count;i++){
+        const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+        // cylindrical unwrap
+        const u = (Math.atan2(z, x) / (Math.PI*2)) + 0.5;
+        const v = (y - bb.min.y) / (size.y || 1);
+        uvArray[i*2] = u;
+        uvArray[i*2+1] = v;
+      }
+      geometry.setAttribute('uv', new THREE.BufferAttribute(uvArray, 2));
+    }
+  }
+
+  function applyMeshDefaults(obj){
+    let meshFound = null;
+    obj.traverse(child=>{
+      if (child.isMesh){
+        ensureUVs(child.geometry);
+        if (!meshFound) meshFound = child;
+        else {
+          // merge: just keep tracking, but give all meshes the same material later
+          child._isExtra = true;
+        }
+      }
+    });
+    return meshFound;
+  }
+
+  function clearScene(){
+    if (currentMesh){
+      scene.remove(currentMesh.parent || currentMesh);
+    }
+  }
+
+  function finalizeLoadedModel(root){
+    clearScene();
+    scene.add(root);
+    const mainMesh = applyMeshDefaults(root);
+    currentMesh = mainMesh;
+
+    // apply combined material to ALL mesh children so painting shows everywhere consistent
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      map: combinedTexture,
+      roughness: 0.78,
+      metalness: 0.0,
+    });
+    currentMaterial = mat;
+    root.traverse(child=>{
+      if (child.isMesh){
+        child.material = mat;
+      }
+    });
+
+    frameObject(root);
+    rebakeCombinedTexture();
+
+    state.hasModel = true;
+    emptyState.style.display = 'none';
+    exportBtn.disabled = false;
+    statusText.textContent = 'Model loaded — switch to Draw mode to begin';
+    pushHistory();
+  }
+
+  function loadOBJFromText(text, mtlObj){
+    showLoading('Parsing OBJ…');
+    setTimeout(()=>{
+      try{
+        const loader = new THREE.OBJLoader();
+        if (mtlObj) loader.setMaterials(mtlObj);
+        const obj = loader.parse(text);
+        finalizeLoadedModel(obj);
+        toast('Model loaded');
+      } catch(e){
+        console.error(e);
+        toast('Could not parse that OBJ file');
+      }
+      hideLoading();
+    }, 30);
+  }
+
+  function readFileAsText(file){
+    return new Promise((res,rej)=>{
+      const r = new FileReader();
+      r.onload = ()=>res(r.result);
+      r.onerror = rej;
+      r.readAsText(file);
+    });
+  }
+  function readFileAsDataURL(file){
+    return new Promise((res,rej)=>{
+      const r = new FileReader();
+      r.onload = ()=>res(r.result);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+  }
+
+  let pendingMtlText = null;
+  let pendingTextureFile = null;
+
+  async function handleObjFile(file){
+    const objChip = document.getElementById('objChip');
+    objChip.innerHTML = '';
+    const chip = document.createElement('div');
+    chip.className = 'filechip';
+    chip.innerHTML = `<span>${file.name}</span>`;
+    objChip.appendChild(chip);
+
+    const text = await readFileAsText(file);
+
+    if (pendingTextureFile){
+      const dataUrl = await readFileAsDataURL(pendingTextureFile);
+      const img = new Image();
+      img.onload = ()=>{
+        baseTextureImage = img;
+        loadOBJFromText(text, null);
+      };
+      img.src = dataUrl;
+    } else {
+      baseTextureImage = null;
+      loadOBJFromText(text, null);
+    }
+  }
+
+  async function handleAuxFiles(files){
+    const mtlChip = document.getElementById('mtlChip');
+    for (const file of files){
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (ext === 'jpg' || ext === 'jpeg' || ext === 'png'){
+        pendingTextureFile = file;
+        const chip = document.createElement('div');
+        chip.className = 'filechip';
+        chip.innerHTML = `<span>${file.name}</span><span class="x" data-clear="tex">✕</span>`;
+        mtlChip.appendChild(chip);
+        // if model already loaded, re-apply texture immediately
+        if (state.hasModel){
+          const dataUrl = await readFileAsDataURL(file);
+          const img = new Image();
+          img.onload = ()=>{ baseTextureImage = img; rebakeCombinedTexture(); toast('Texture applied'); };
+          img.src = dataUrl;
+        }
+      } else if (ext === 'mtl'){
+        const chip = document.createElement('div');
+        chip.className = 'filechip';
+        chip.innerHTML = `<span>${file.name} (mtl noted — re-import obj to apply)</span>`;
+        mtlChip.appendChild(chip);
+      }
+    }
+  }
+
+  // wire up obj dropzone
+  const objDrop = document.getElementById('objDrop');
+  const objInput = document.getElementById('objInput');
+  objDrop.addEventListener('click', ()=> objInput.click());
+  objInput.addEventListener('change', e=>{
+    if (e.target.files[0]) handleObjFile(e.target.files[0]);
+  });
+  ['dragover','dragenter'].forEach(ev=> objDrop.addEventListener(ev, e=>{ e.preventDefault(); objDrop.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev=> objDrop.addEventListener(ev, e=>{ e.preventDefault(); objDrop.classList.remove('drag'); }));
+  objDrop.addEventListener('drop', e=>{
+    const f = e.dataTransfer.files[0];
+    if (f) handleObjFile(f);
+  });
+
+  const mtlDrop = document.getElementById('mtlDrop');
+  const mtlInput = document.getElementById('mtlInput');
+  mtlDrop.addEventListener('click', ()=> mtlInput.click());
+  mtlInput.addEventListener('change', e=>{
+    if (e.target.files.length) handleAuxFiles(Array.from(e.target.files));
+  });
+  ['dragover','dragenter'].forEach(ev=> mtlDrop.addEventListener(ev, e=>{ e.preventDefault(); mtlDrop.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev=> mtlDrop.addEventListener(ev, e=>{ e.preventDefault(); mtlDrop.classList.remove('drag'); }));
+  mtlDrop.addEventListener('drop', e=>{
+    if (e.dataTransfer.files.length) handleAuxFiles(Array.from(e.dataTransfer.files));
+  });
+
+  /* ---------- Quick start shapes ---------- */
+  function buildCylinderArm(){
+    const group = new THREE.Group();
+    const geo = new THREE.CylinderGeometry(0.42, 0.5, 2.4, 48, 32, true);
+    // cylindrical UVs already default-correct in three.js CylinderGeometry
+    const mesh = new THREE.Mesh(geo);
+    group.add(mesh);
+    return group;
+  }
+  function buildSphere(){
+    const group = new THREE.Group();
+    const geo = new THREE.SphereGeometry(1, 64, 48);
+    const mesh = new THREE.Mesh(geo);
+    group.add(mesh);
+    return group;
+  }
+
+  document.getElementById('loadArmBtn').addEventListener('click', ()=>{
+    showLoading('Building forearm surface…');
+    setTimeout(()=>{
+      baseTextureImage = null;
+      finalizeLoadedModel(buildCylinderArm());
+      hideLoading();
+      toast('Loaded generic forearm');
+    }, 20);
+  });
+  document.getElementById('loadSphereBtn').addEventListener('click', ()=>{
+    showLoading('Building sphere…');
+    setTimeout(()=>{
+      baseTextureImage = null;
+      finalizeLoadedModel(buildSphere());
+      hideLoading();
+      toast('Loaded test sphere');
+    }, 20);
+  });
+
+  /* ============================================================
+     SKIN COLOR
+  ============================================================ */
+  document.getElementById('skinColor').addEventListener('input', e=>{
+    state.skinColor = e.target.value;
+    if (!baseTextureImage) rebakeCombinedTexture();
+  });
+
+  /* ============================================================
+     MODE / TOOL SWITCHING
+  ============================================================ */
+  const drawCanvas = document.getElementById('drawCanvas');
+  const drawCtx = drawCanvas.getContext('2d');
+  const modeLabel = document.getElementById('modeLabel');
+  const drawTools = document.getElementById('drawTools');
+
+  function setMode(mode){
+    state.mode = mode;
+    document.querySelectorAll('.tool-btn[data-mode]').forEach(b=>{
+      b.classList.toggle('active', b.dataset.mode === mode);
+    });
+    if (mode === 'draw'){
+      controls.enabled = false;
+      drawCanvas.classList.remove('orbit-mode');
+      drawCanvas.style.pointerEvents = 'auto';
+      modeLabel.textContent = 'Draw mode';
+      drawTools.style.display = '';
+    } else {
+      controls.enabled = true;
+      drawCanvas.classList.add('orbit-mode');
+      drawCanvas.style.pointerEvents = 'none';
+      modeLabel.textContent = 'Orbit mode';
+      drawTools.style.display = 'none';
+    }
+  }
+  document.querySelectorAll('.tool-btn[data-mode]').forEach(b=>{
+    b.addEventListener('click', ()=> setMode(b.dataset.mode));
+  });
+
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      state.tool = b.dataset.tool;
+      document.querySelectorAll('.tool-btn[data-tool]').forEach(x=>x.classList.toggle('active', x===b));
+    });
+  });
+
+  document.getElementById('sizeSlider').addEventListener('input', e=>{
+    state.brushSize = parseInt(e.target.value,10);
+    document.getElementById('sizeVal').textContent = state.brushSize+'px';
+  });
+  document.getElementById('opacitySlider').addEventListener('input', e=>{
+    state.opacity = parseInt(e.target.value,10)/100;
+    document.getElementById('opacityVal').textContent = Math.round(state.opacity*100)+'%';
+    document.getElementById('opacityFill').style.opacity = state.opacity;
+  });
+  document.getElementById('inkColor').addEventListener('input', e=>{
+    state.inkColor = e.target.value;
+    document.getElementById('opacityFill').style.background = state.inkColor;
+    document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('active'));
+  });
+  document.querySelectorAll('.swatch').forEach(s=>{
+    s.addEventListener('click', ()=>{
+      state.inkColor = s.dataset.color;
+      document.getElementById('inkColor').value = s.dataset.color;
+      document.getElementById('opacityFill').style.background = s.dataset.color;
+      document.querySelectorAll('.swatch').forEach(x=>x.classList.remove('active'));
+      s.classList.add('active');
+    });
+  });
+
+  /* ============================================================
+     RAYCAST-BASED PAINTING (screen stroke -> UV -> paint texture)
+  ============================================================ */
+  const raycaster = new THREE.Raycaster();
+  let isPointerDown = false;
+  let lastUV = null;
+
+  function getPointerNDC(evt){
+    const rect = drawCanvas.getBoundingClientRect();
+    const x = ((evt.clientX - rect.left) / rect.width) * 2 - 1;
+    const y = -((evt.clientY - rect.top) / rect.height) * 2 + 1;
+    return { x, y };
+  }
+
+  function raycastUV(evt){
+    if (!currentMesh) return null;
+    const ndc = getPointerNDC(evt);
+    raycaster.setFromCamera(ndc, camera);
+    const targets = [];
+    scene.traverse(o=>{ if (o.isMesh) targets.push(o); });
+    const hits = raycaster.intersectObjects(targets, false);
+    if (hits.length === 0) return null;
+    const hit = hits[0];
+    if (!hit.uv) return null;
+    return { u: hit.uv.x, v: 1 - hit.uv.y, screen: ndc };
+  }
+
+  function paintDotAtUV(uv, size, color, opacity, erase){
+    const x = uv.u * PAINT_SIZE;
+    const y = uv.v * PAINT_SIZE;
+    const r = (size / 2) * (PAINT_SIZE / 512); // scale brush relative to texture res
+    paintCtx.save();
+    paintCtx.globalAlpha = opacity;
+    if (erase){
+      paintCtx.globalCompositeOperation = 'destination-out';
+      paintCtx.fillStyle = 'rgba(0,0,0,1)';
+    } else {
+      paintCtx.globalCompositeOperation = 'source-over';
+      paintCtx.fillStyle = color;
+    }
+    paintCtx.beginPath();
+    paintCtx.arc(x, y, r, 0, Math.PI*2);
+    paintCtx.fill();
+
+    // handle UV wrap-around (e.g. cylindrical seam) by also painting wrapped copies
+    if (x - r < 0) drawWrapped(x + PAINT_SIZE, y, r, color, opacity, erase);
+    if (x + r > PAINT_SIZE) drawWrapped(x - PAINT_SIZE, y, r, color, opacity, erase);
+    paintCtx.restore();
+  }
+  function drawWrapped(x,y,r,color,opacity,erase){
+    paintCtx.save();
+    paintCtx.globalAlpha = opacity;
+    paintCtx.globalCompositeOperation = erase ? 'destination-out' : 'source-over';
+    paintCtx.fillStyle = erase ? 'rgba(0,0,0,1)' : color;
+    paintCtx.beginPath();
+    paintCtx.arc(x,y,r,0,Math.PI*2);
+    paintCtx.fill();
+    paintCtx.restore();
+  }
+
+  function paintLineUV(uvA, uvB, size, color, opacity, erase){
+    // step along the segment in UV space, painting dots — avoids stretching artifacts
+    const dx = uvB.u - uvA.u, dy = uvB.v - uvA.v;
+    const dist = Math.sqrt(dx*dx+dy*dy) * PAINT_SIZE;
+    const steps = Math.max(1, Math.ceil(dist / (size*0.35)));
+    for (let i=0;i<=steps;i++){
+      const t = i/steps;
+      paintDotAtUV({ u: uvA.u + dx*t, v: uvA.v + dy*t }, size, color, opacity, erase);
+    }
+  }
+
+  function commitPaint(){
+    paintTexture.needsUpdate = true;
+    rebakeCombinedTexture();
+  }
+
+  // 2D screen-space preview line (for the "line" tool, drawn on overlay canvas before commit)
+  function clearPreview(){
+    drawCtx.clearRect(0,0,drawCanvas.width, drawCanvas.height);
+  }
+  function drawPreviewLine(p1, p2){
+    clearPreview();
+    drawCtx.save();
+    drawCtx.strokeStyle = state.inkColor;
+    drawCtx.globalAlpha = state.opacity;
+    drawCtx.lineWidth = state.brushSize;
+    drawCtx.lineCap = 'round';
+    drawCtx.beginPath();
+    drawCtx.moveTo(p1.x, p1.y);
+    drawCtx.lineTo(p2.x, p2.y);
+    drawCtx.stroke();
+    drawCtx.restore();
+  }
+
+  function clientToCanvasPx(evt){
+    const rect = drawCanvas.getBoundingClientRect();
+    return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
+  }
+
+  drawCanvas.addEventListener('pointerdown', evt=>{
+    if (state.mode !== 'draw' || !currentMesh) return;
+    isPointerDown = true;
+    drawCanvas.setPointerCapture(evt.pointerId);
+
+    const uv = raycastUV(evt);
+    if (state.tool === 'line'){
+      state.lineStart = { uv, px: clientToCanvasPx(evt) };
+      return;
+    }
+    if (!uv) { lastUV = null; return; }
+    const erase = state.tool === 'eraser';
+    paintDotAtUV(uv, state.brushSize, state.inkColor, state.opacity, erase);
+    commitPaint();
+    lastUV = uv;
+  });
+
+  drawCanvas.addEventListener('pointermove', evt=>{
+    if (state.mode !== 'draw' || !isPointerDown || !currentMesh) return;
+
+    if (state.tool === 'line' && state.lineStart){
+      const cur = clientToCanvasPx(evt);
+      drawPreviewLine(state.lineStart.px, cur);
+      return;
+    }
+
+    const uv = raycastUV(evt);
+    if (!uv){ lastUV = null; return; }
+    const erase = state.tool === 'eraser';
+    if (lastUV){
+      paintLineUV(lastUV, uv, state.brushSize, state.inkColor, state.opacity, erase);
+    } else {
+      paintDotAtUV(uv, state.brushSize, state.inkColor, state.opacity, erase);
+    }
+    commitPaint();
+    lastUV = uv;
+  });
+
+  function endStroke(evt){
+    if (state.mode !== 'draw') return;
+    if (state.tool === 'line' && state.lineStart && evt){
+      const uvEnd = raycastUV(evt);
+      if (state.lineStart.uv && uvEnd){
+        paintLineUV(state.lineStart.uv, uvEnd, state.brushSize, state.inkColor, state.opacity, false);
+        commitPaint();
+      }
+      clearPreview();
+      state.lineStart = null;
+    }
+    if (isPointerDown){
+      isPointerDown = false;
+      lastUV = null;
+      pushHistory();
+    }
+  }
+  drawCanvas.addEventListener('pointerup', endStroke);
+  drawCanvas.addEventListener('pointerleave', e=>{ if(isPointerDown) endStroke(e); });
+
+  // Stencil/stamp tool: click to place a small placeholder tattoo outline shape, draggable size via brush size
+  drawCanvas.addEventListener('click', evt=>{
+    if (state.mode !== 'draw' || state.tool !== 'stamp' || !currentMesh) return;
+    const uv = raycastUV(evt);
+    if (!uv) return;
+    stampShapeAtUV(uv);
+    commitPaint();
+    pushHistory();
+  });
+
+  function stampShapeAtUV(uv){
+    const x = uv.u * PAINT_SIZE, y = uv.v * PAINT_SIZE;
+    const scale = (state.brushSize/4) * (PAINT_SIZE/512);
+    paintCtx.save();
+    paintCtx.translate(x,y);
+    paintCtx.strokeStyle = state.inkColor;
+    paintCtx.globalAlpha = state.opacity;
+    paintCtx.lineWidth = 3;
+    // simple rose-like stencil placeholder: a circle + petal curves, generic "flash" shape
+    paintCtx.beginPath();
+    paintCtx.arc(0,0, 14*scale, 0, Math.PI*2);
+    paintCtx.stroke();
+    for (let i=0;i<6;i++){
+      const a = (i/6)*Math.PI*2;
+      paintCtx.beginPath();
+      paintCtx.ellipse(Math.cos(a)*18*scale, Math.sin(a)*18*scale, 10*scale, 6*scale, a, 0, Math.PI*2);
+      paintCtx.stroke();
+    }
+    paintCtx.restore();
+  }
+
+  /* ============================================================
+     UNDO / REDO  (snapshot paint canvas)
+  ============================================================ */
+  function pushHistory(){
+    if (state.historyIndex < state.history.length - 1){
+      state.history = state.history.slice(0, state.historyIndex+1);
+    }
+    state.history.push(paintCanvas.toDataURL());
+    if (state.history.length > state.maxHistory) state.history.shift();
+    state.historyIndex = state.history.length - 1;
+  }
+  function restoreFromHistory(idx){
+    if (idx < 0 || idx >= state.history.length) return;
+    const img = new Image();
+    img.onload = ()=>{
+      paintCtx.clearRect(0,0,PAINT_SIZE,PAINT_SIZE);
+      paintCtx.drawImage(img,0,0);
+      commitPaint();
+    };
+    img.src = state.history[idx];
+  }
+  document.getElementById('undoBtn').addEventListener('click', ()=>{
+    if (state.historyIndex > 0){
+      state.historyIndex--;
+      restoreFromHistory(state.historyIndex);
+    }
+  });
+  document.getElementById('redoBtn').addEventListener('click', ()=>{
+    if (state.historyIndex < state.history.length - 1){
+      state.historyIndex++;
+      restoreFromHistory(state.historyIndex);
+    }
+  });
+  document.getElementById('clearBtn').addEventListener('click', ()=>{
+    if (!currentMesh) return;
+    if (!confirm('Clear all ink from the model?')) return;
+    paintCtx.clearRect(0,0,PAINT_SIZE,PAINT_SIZE);
+    commitPaint();
+    pushHistory();
+    toast('Cleared');
+  });
+
+  /* ============================================================
+     REFERENCE IMAGE (screen-space overlay to trace from, not baked)
+  ============================================================ */
+  const refDrop = document.getElementById('refDrop');
+  const refInput = document.getElementById('refInput');
+  let refImgEl = null;
+
+  refDrop.addEventListener('click', ()=> refInput.click());
+  refInput.addEventListener('change', e=>{ if (e.target.files[0]) loadRefImage(e.target.files[0]); });
+  ['dragover','dragenter'].forEach(ev=> refDrop.addEventListener(ev, e=>{ e.preventDefault(); refDrop.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev=> refDrop.addEventListener(ev, e=>{ e.preventDefault(); refDrop.classList.remove('drag'); }));
+  refDrop.addEventListener('drop', e=>{ if (e.dataTransfer.files[0]) loadRefImage(e.dataTransfer.files[0]); });
+
+  function loadRefImage(file){
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      refImgEl = new Image();
+      refImgEl.onload = ()=>{
+        document.getElementById('refOpacityField').style.display = '';
+        const chip = document.getElementById('refChip');
+        chip.innerHTML = `<div class="filechip"><span>${file.name}</span><span class="x" id="refClear">✕</span></div>`;
+        document.getElementById('refClear').addEventListener('click', ()=>{
+          refImgEl = null;
+          chip.innerHTML = '';
+          document.getElementById('refOpacityField').style.display = 'none';
+        });
+        toast('Reference loaded — shown top-left as a guide');
+      };
+      refImgEl.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+  document.getElementById('refOpacitySlider').addEventListener('input', e=>{
+    state.refOpacity = parseInt(e.target.value,10)/100;
+    document.getElementById('refOpacityVal').textContent = Math.round(state.refOpacity*100)+'%';
+  });
+
+  // Render the reference image as a fixed floating thumbnail (simplest reliable trace aid)
+  let refThumb = null;
+  function ensureRefThumb(){
+    if (!refThumb){
+      refThumb = document.createElement('div');
+      refThumb.style.position = 'absolute';
+      refThumb.style.top = '60px';
+      refThumb.style.left = '14px';
+      refThumb.style.width = '160px';
+      refThumb.style.border = '1px solid #3a3530';
+      refThumb.style.borderRadius = '6px';
+      refThumb.style.overflow = 'hidden';
+      refThumb.style.cursor = 'move';
+      refThumb.style.zIndex = '20';
+      const img = document.createElement('img');
+      img.style.width = '100%';
+      img.style.display = 'block';
+      refThumb.appendChild(img);
+      refThumb._img = img;
+      viewport.appendChild(refThumb);
+
+      // simple drag
+      let dragging=false, sx=0, sy=0, ox=0, oy=0;
+      refThumb.addEventListener('pointerdown', e=>{
+        dragging=true; sx=e.clientX; sy=e.clientY;
+        ox = refThumb.offsetLeft; oy = refThumb.offsetTop;
+        refThumb.setPointerCapture(e.pointerId);
+      });
+      refThumb.addEventListener('pointermove', e=>{
+        if(!dragging) return;
+        refThumb.style.left = (ox + (e.clientX-sx)) + 'px';
+        refThumb.style.top = (oy + (e.clientY-sy)) + 'px';
+      });
+      refThumb.addEventListener('pointerup', ()=> dragging=false);
+    }
+    return refThumb;
+  }
+  function updateRefThumb(){
+    if (refImgEl){
+      const t = ensureRefThumb();
+      t.style.display = '';
+      t._img.src = refImgEl.src;
+      t.style.opacity = state.refOpacity + 0.4 > 1 ? 1 : (state.refOpacity + 0.4);
+    } else if (refThumb){
+      refThumb.style.display = 'none';
+    }
+  }
+  setInterval(updateRefThumb, 300);
+
+  /* ============================================================
+     VIEW PRESETS
+  ============================================================ */
+  function setCameraAngle(theta){
+    const dist = camera.position.distanceTo(controls.target) || 3;
+    camera.position.set(
+      controls.target.x + Math.sin(theta)*dist,
+      controls.target.y,
+      controls.target.z + Math.cos(theta)*dist
+    );
+    controls.update();
+  }
+  document.getElementById('frontBtn').addEventListener('click', ()=> setCameraAngle(0));
+  document.getElementById('sideBtn').addEventListener('click', ()=> setCameraAngle(Math.PI/2));
+  document.getElementById('backBtn').addEventListener('click', ()=> setCameraAngle(Math.PI));
+  document.getElementById('resetViewBtn').addEventListener('click', ()=>{
+    camera.position.set(0,0,3);
+    controls.target.set(0,0,0);
+    controls.update();
+  });
+
+  /* ============================================================
+     KEYBOARD SHORTCUTS
+  ============================================================ */
+  window.addEventListener('keydown', e=>{
+    if (e.target.tagName === 'INPUT') return;
+    if (e.key === 'd' || e.key === 'D') setMode('draw');
+    if (e.key === 'o' || e.key === 'O') setMode('orbit');
+    if ((e.key === 'z' || e.key === 'Z') && !e.shiftKey) document.getElementById('undoBtn').click();
+    if ((e.key === 'z' || e.key === 'Z') && e.shiftKey) document.getElementById('redoBtn').click();
+  });
+
+  /* ============================================================
+     EXPORT
+  ============================================================ */
+  exportBtn.addEventListener('click', async ()=>{
+    if (!currentMesh) return;
+    const zip = new JSZip();
+
+    // 1. current 3D view as PNG
+    renderer.render(scene, camera);
+    const viewDataUrl = canvas3d.toDataURL('image/png');
+    zip.file('mockup-view.png', viewDataUrl.split(',')[1], { base64:true });
+
+    // 2. flattened tattoo design (ink only, transparent bg) for printing/stenciling
+    zip.file('tattoo-design-flat.png', paintCanvas.toDataURL('image/png').split(',')[1], { base64:true });
+
+    // 3. combined skin+ink texture (full UV map)
+    zip.file('combined-texture.png', combinedCanvas.toDataURL('image/png').split(',')[1], { base64:true });
+
+    const blob = await zip.generateAsync({ type:'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tattoo-mockup-export.zip';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=> URL.revokeObjectURL(url), 2000);
+    toast('Exported — check your downloads');
+  });
+
+  /* ============================================================
+     INITIAL UI STATE
+  ============================================================ */
+  setMode('orbit');
+  document.getElementById('opacityFill').style.background = state.inkColor;
+  document.getElementById('opacityFill').style.opacity = state.opacity;
+
+})();
+</script>
+
+</body>
+</html>
